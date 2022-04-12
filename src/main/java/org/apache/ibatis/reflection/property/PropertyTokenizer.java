@@ -18,24 +18,53 @@ package org.apache.ibatis.reflection.property;
 import java.util.Iterator;
 
 /**
+ * 属性分解为标记，迭代子模式
+ * 如person[0].birthdate.year，将依次取得person[0], birthdate, year
+ *
  * @author Clinton Begin
  */
 public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
+
+  // person[0].birthdate.year
+
+  /**
+   * 当前表达式的名称
+   * person
+   */
   private String name;
+
+  /**
+   * 当前表达式的索引名
+   * person[0]
+   */
   private final String indexedName;
+
+  /**
+   * 索引下表
+   * 0
+   */
   private String index;
+
+  /**
+   * 子表达式
+   * birthdate.year
+   */
   private final String children;
 
   public PropertyTokenizer(String fullname) {
+    //person[0].birthdate.year
+    //找.
     int delim = fullname.indexOf('.');
     if (delim > -1) {
       name = fullname.substring(0, delim);
       children = fullname.substring(delim + 1);
     } else {
+      //找不到.的话，取全部部分
       name = fullname;
       children = null;
     }
     indexedName = name;
+    //把中括号里的数字给解析出来
     delim = name.indexOf('[');
     if (delim > -1) {
       index = name.substring(delim + 1, name.length() - 1);
@@ -64,6 +93,7 @@ public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
     return children != null;
   }
 
+  //取得下一个,非常简单，直接再通过儿子来new另外一个实例
   @Override
   public PropertyTokenizer next() {
     return new PropertyTokenizer(children);
