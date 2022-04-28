@@ -28,14 +28,26 @@ import org.apache.ibatis.reflection.wrapper.ObjectWrapper;
 import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 
 /**
+ * 元对象,各种get，set方法有点ognl表达式的味道
+ * 可以参考MetaObjectTest来跟踪调试，基本上用到了reflection包下所有的类
+ *
  * @author Clinton Begin
  */
 public class MetaObject {
 
+  /** 原始 JavaBean 对象 */
   private final Object originalObject;
+
+  /** ObjectWrapper 对象，其中封装了 originalObject 对象 */
   private final ObjectWrapper objectWrapper;
+
+  /** 负责实例化 originalObject 的工厂对象 */
   private final ObjectFactory objectFactory;
+
+  /** 负责创建 objectWrapper 的工厂对象 */
   private final ObjectWrapperFactory objectWrapperFactory;
+
+  /** 用于创建并缓存 reflectorFactory 对象的工厂对象 */
   private final ReflectorFactory reflectorFactory;
 
   private MetaObject(Object object, ObjectFactory objectFactory, ObjectWrapperFactory objectWrapperFactory, ReflectorFactory reflectorFactory) {
@@ -45,18 +57,26 @@ public class MetaObject {
     this.reflectorFactory = reflectorFactory;
 
     if (object instanceof ObjectWrapper) {
+      //如果对象本身已经是ObjectWrapper型，则直接赋给objectWrapper，优先使用
       this.objectWrapper = (ObjectWrapper) object;
     } else if (objectWrapperFactory.hasWrapperFor(object)) {
+      //如果有包装器,调用ObjectWrapperFactory.getWrapperFor
       this.objectWrapper = objectWrapperFactory.getWrapperFor(this, object);
     } else if (object instanceof Map) {
+      //如果是Map型，返回MapWrapper
       this.objectWrapper = new MapWrapper(this, (Map) object);
     } else if (object instanceof Collection) {
+      //如果是Collection型，返回CollectionWrapper
       this.objectWrapper = new CollectionWrapper(this, (Collection) object);
     } else {
+      //除此以外，返回BeanWrapper
       this.objectWrapper = new BeanWrapper(this, object);
     }
   }
 
+  /**
+   * MetaObject 的构造方法是 private 修饰的，只能通过 forObject() 这个静态方法创建对象
+   */
   public static MetaObject forObject(Object object, ObjectFactory objectFactory, ObjectWrapperFactory objectWrapperFactory, ReflectorFactory reflectorFactory) {
     if (object == null) {
       return SystemMetaObject.NULL_META_OBJECT;
