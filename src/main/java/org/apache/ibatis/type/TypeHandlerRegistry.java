@@ -49,11 +49,14 @@ import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.reflection.Jdk;
 
 /**
+ * 类型处理器注册机
+ *
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */
 public final class TypeHandlerRegistry {
 
+  //枚举型map
   private final Map<JdbcType, TypeHandler<?>> JDBC_TYPE_HANDLER_MAP = new EnumMap<JdbcType, TypeHandler<?>>(JdbcType.class);
   private final Map<Type, Map<JdbcType, TypeHandler<?>>> TYPE_HANDLER_MAP = new ConcurrentHashMap<Type, Map<JdbcType, TypeHandler<?>>>();
   private final TypeHandler<Object> UNKNOWN_TYPE_HANDLER = new UnknownTypeHandler(this);
@@ -64,6 +67,8 @@ public final class TypeHandlerRegistry {
   private Class<? extends TypeHandler> defaultEnumTypeHandler = EnumTypeHandler.class;
 
   public TypeHandlerRegistry() {
+    //构造函数里注册系统内置的类型处理器
+    //以下是为多个类型注册到同一个handler
     register(Boolean.class, new BooleanTypeHandler());
     register(boolean.class, new BooleanTypeHandler());
     register(JdbcType.BOOLEAN, new BooleanTypeHandler());
@@ -93,6 +98,8 @@ public final class TypeHandlerRegistry {
     register(JdbcType.DOUBLE, new DoubleTypeHandler());
 
     register(Reader.class, new ClobReaderTypeHandler());
+
+    //以下是为同一个类型的多种变种注册到多个不同的handler
     register(String.class, new StringTypeHandler());
     register(String.class, JdbcType.CHAR, new StringTypeHandler());
     register(String.class, JdbcType.CLOB, new ClobTypeHandler());
@@ -347,6 +354,9 @@ public final class TypeHandlerRegistry {
     register((Type) javaType, typeHandler);
   }
 
+  //MappedJdbcTypes的注解的用法可参考测试类StringTrimmingTypeHandler
+  //另外在文档中也提到，这是扩展自定义的typeHandler所需要的
+  //(你可以重写类型处理器或创建你自己的类型处理器来处理不支持的或非标准的类型)
   private <T> void register(Type javaType, TypeHandler<? extends T> typeHandler) {
     MappedJdbcTypes mappedJdbcTypes = typeHandler.getClass().getAnnotation(MappedJdbcTypes.class);
     if (mappedJdbcTypes != null) {
