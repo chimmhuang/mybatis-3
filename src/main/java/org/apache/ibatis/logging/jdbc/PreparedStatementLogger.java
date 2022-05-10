@@ -44,21 +44,28 @@ public final class PreparedStatementLogger extends BaseJdbcLogger implements Inv
   @Override
   public Object invoke(Object proxy, Method method, Object[] params) throws Throwable {
     try {
+      // 如果调用的是从 Object 继承的方法，则直接调用，不做任何其他处理
       if (Object.class.equals(method.getDeclaringClass())) {
         return method.invoke(this, params);
-      }          
+      }
+      // 调用了 EXECUTE_METHODS 集合中的方法
       if (EXECUTE_METHODS.contains(method.getName())) {
+        // 日志输出
         if (isDebugEnabled()) {
           debug("Parameters: " + getParameterValueString(), true);
         }
+        // 清空 BaseJdbcLogger 中定义的三个 column* 集合
         clearColumnInfo();
         if ("executeQuery".equals(method.getName())) {
+          // 如果调用 executeQuery() 方法，则为 ResultSet 创建代理对象
           ResultSet rs = (ResultSet) method.invoke(statement, params);
           return rs == null ? null : ResultSetLogger.newInstance(rs, statementLog, queryStack);
         } else {
+          // 否则直接返回结果
           return method.invoke(statement, params);
         }
       } else if (SET_METHODS.contains(method.getName())) {
+        // 如果调用 SET_METHODS 集合中的方法，则通过 setColumn() 方法记录到 BaseJdbcLogger 中定义的三个 column* 集合
         if ("setNull".equals(method.getName())) {
           setColumn(params[0], null);
         } else {
@@ -66,9 +73,11 @@ public final class PreparedStatementLogger extends BaseJdbcLogger implements Inv
         }
         return method.invoke(statement, params);
       } else if ("getResultSet".equals(method.getName())) {
+        // 如果调用 getResultSet() 方法，则为 ResultSet 创建代理对象
         ResultSet rs = (ResultSet) method.invoke(statement, params);
         return rs == null ? null : ResultSetLogger.newInstance(rs, statementLog, queryStack);
       } else if ("getUpdateCount".equals(method.getName())) {
+        // 如果调用 getUpdateCount() 方法，则通过日志框架输出其结果
         int updateCount = (Integer) method.invoke(statement, params);
         if (updateCount != -1) {
           debug("   Updates: " + updateCount, false);

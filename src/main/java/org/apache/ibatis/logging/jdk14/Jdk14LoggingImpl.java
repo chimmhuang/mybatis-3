@@ -21,13 +21,17 @@ import java.util.logging.Logger;
 import org.apache.ibatis.logging.Log;
 
 /**
+ * 用的jdk1.4 logger里的Logger
+ *
  * @author Clinton Begin
  */
 public class Jdk14LoggingImpl implements Log {
 
+  // 底层封装的 java.util.logging.Logger 对象
   private final Logger log;
 
   public Jdk14LoggingImpl(String clazz) {
+    // 初始化 java.util.logging.Logger 对象
     log = Logger.getLogger(clazz);
   }
 
@@ -46,6 +50,7 @@ public class Jdk14LoggingImpl implements Log {
     log.log(Level.SEVERE, s, e);
   }
 
+  // 将请求全部委托给了 java.util.logging.Logger 对象的相应方法
   @Override
   public void error(String s) {
     log.log(Level.SEVERE, s);

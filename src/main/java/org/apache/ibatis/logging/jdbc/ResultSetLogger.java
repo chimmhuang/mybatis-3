@@ -37,10 +37,19 @@ import org.apache.ibatis.reflection.ExceptionUtil;
  */
 public final class ResultSetLogger extends BaseJdbcLogger implements InvocationHandler {
 
+  // 记录了超大长度的类型
   private static Set<Integer> BLOB_TYPES = new HashSet<Integer>();
+
+  // 是否是 ResultSet 结果集的第一行
   private boolean first = true;
+
+  // 统计行数
   private int rows;
+
+  // 真正的 ResultSet 对象
   private final ResultSet rs;
+
+  // 记录了超大字段的列编号
   private final Set<Integer> blobColumns = new HashSet<Integer>();
 
   static {
@@ -62,26 +71,35 @@ public final class ResultSetLogger extends BaseJdbcLogger implements InvocationH
   @Override
   public Object invoke(Object proxy, Method method, Object[] params) throws Throwable {
     try {
+      // 如果调用的是从 Object 继承的方法，则直接调用，不做任何其他处理
       if (Object.class.equals(method.getDeclaringClass())) {
         return method.invoke(this, params);
       }    
       Object o = method.invoke(rs, params);
+      // 针对 ResultSet.next() 方法处理
       if ("next".equals(method.getName())) {
+        // 是否存在下一行数据
         if (((Boolean) o)) {
           rows++;
           if (isTraceEnabled()) {
             ResultSetMetaData rsmd = rs.getMetaData();
+            // 获取数据集的列数
             final int columnCount = rsmd.getColumnCount();
+            // 如果是第一行数据，则输出表头
             if (first) {
               first = false;
+              // 除了输出表头，还会填充 blobColumns 集合，记录超大类型的列
               printColumnHeaders(rsmd, columnCount);
             }
+            // 输出该行记录，注意会过滤掉 blobColumns 中记录的列，这些列的数据较大，不会输出到日志
             printColumnValues(columnCount);
           }
         } else {
+          // 遍历完 ResultSet 之后，会输出总函数
           debug("     Total: " + rows, false);
         }
       }
+      // 清空 BaseJdbcLogger 中的 column* 集合
       clearColumnInfo();
       return o;
     } catch (Throwable t) {

@@ -18,6 +18,8 @@ package org.apache.ibatis.logging.stdout;
 import org.apache.ibatis.logging.Log;
 
 /**
+ * 打印到控制台的Log
+ *
  * @author Clinton Begin
  */
 public class StdOutImpl implements Log {
