@@ -35,6 +35,7 @@ import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 
 /**
+ * 默认的VFS，提供了读取jar包的方法
  * A default implementation of {@link VFS} that works for most application servers.
  * 
  * @author Ben Gunter
@@ -58,15 +59,18 @@ public class DefaultVFS extends VFS {
 
       // First, try to find the URL of a JAR file containing the requested resource. If a JAR
       // file is found, then we'll list child resources by reading the JAR.
+      // 如果 url 指向的资源在一个 Jar 包中，则获取该 Jar 包对应的 URL，否则返回 null
       URL jarUrl = findJarForResource(url);
       if (jarUrl != null) {
         is = jarUrl.openStream();
         if (log.isDebugEnabled()) {
           log.debug("Listing " + url);
         }
+        //用JDK自带的JarInputStream来读取jar包。返回以 path 开头的资源列表
         resources = listResources(new JarInputStream(is), path);
       }
       else {
+        // 遍历 url 指向的目录，将其下资源名称记录到  children 集合中，\
         List<String> children = new ArrayList<String>();
         try {
           if (isJar(url)) {
@@ -145,6 +149,7 @@ public class DefaultVFS extends VFS {
           prefix = prefix + "/";
         }
 
+        // 遍历 children 集合，递归查找符合条件的资源名称
         // Iterate over immediate children, adding files and recursing into directories
         for (String child : children) {
           String resourcePath = path + "/" + child;
@@ -176,6 +181,7 @@ public class DefaultVFS extends VFS {
    * @throws IOException If I/O errors occur
    */
   protected List<String> listResources(JarInputStream jar, String path) throws IOException {
+    // 如果 path 不是以 "/" 开始和结束，则在其开始和结束位置添加 "/"
     // Include the leading and trailing slash when matching names
     if (!path.startsWith("/")) {
       path = "/" + path;
@@ -184,6 +190,7 @@ public class DefaultVFS extends VFS {
       path = path + "/";
     }
 
+    // 遍历整个 jar 包，将以 path 开头的资源记录到 resources 集合中并返回
     // Iterate over the entries and collect those that begin with the requested path
     List<String> resources = new ArrayList<String>();
     for (JarEntry entry; (entry = jar.getNextJarEntry()) != null;) {

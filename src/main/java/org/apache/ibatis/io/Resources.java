@@ -26,12 +26,14 @@ import java.nio.charset.Charset;
 import java.util.Properties;
 
 /**
+ * 通过类加载器获得resource的辅助类
  * A class to simplify access to resources through the classloader.
  *
  * @author Clinton Begin
  */
 public class Resources {
 
+  //大多数方法都是委托给ClassLoaderWrapper，再去做真正的事
   private static ClassLoaderWrapper classLoaderWrapper = new ClassLoaderWrapper();
 
   /*

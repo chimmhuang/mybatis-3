@@ -54,6 +54,8 @@ import org.apache.ibatis.logging.LogFactory;
  * Collection&lt;ActionBean&gt; beans = resolver.getClasses();
  * </pre>
  *
+ * 找一个package下满足条件的所有类
+ *
  * @author Tim Fennell
  */
 public class ResolverUtil<T> {
@@ -68,6 +70,7 @@ public class ResolverUtil<T> {
    */
   public interface Test {
     /**
+     * 参数 type 是待检测的类，如果该类符合检测的条件，则 matched() 方法返回 true，否则返回 false
      * Will be called repeatedly with candidate classes. Must return True if a class
      * is to be included in the results, false otherwise.
      */
@@ -75,6 +78,7 @@ public class ResolverUtil<T> {
   }
 
   /**
+   * 检测类是否继承了指定的类或接口
    * A Test that checks to see if each class is assignable to the provided class. Note
    * that this test will match the parent type itself if it is presented for matching.
    */
@@ -99,6 +103,7 @@ public class ResolverUtil<T> {
   }
 
   /**
+   * 检测类是否添加了指定的注解
    * A Test that checks to see if each class is annotated with a specific annotation. If it
    * is, then the test returns true, otherwise false.
    */
@@ -213,10 +218,12 @@ public class ResolverUtil<T> {
    * @param packageName the name of the package from which to start scanning for
    *        classes, e.g. {@code net.sourceforge.stripes}
    */
+  //主要的方法，找一个package下满足条件的所有类,被TypeHanderRegistry,MapperRegistry,TypeAliasRegistry调用
   public ResolverUtil<T> find(Test test, String packageName) {
     String path = getPackagePath(packageName);
 
     try {
+      //通过VFS来深入jar包里面去找一个class
       List<String> children = VFS.getInstance().list(path);
       for (String child : children) {
         if (child.endsWith(".class")) {
@@ -250,14 +257,19 @@ public class ResolverUtil<T> {
   @SuppressWarnings("unchecked")
   protected void addIfMatching(Test test, String fqn) {
     try {
+      // fqn 是类的完全限定名，即包括其所在包的报名
       String externalName = fqn.substring(0, fqn.indexOf('.')).replace('/', '.');
       ClassLoader loader = getClassLoader();
+      // 日志输出
       if (log.isDebugEnabled()) {
         log.debug("Checking to see if class " + externalName + " matches criteria [" + test + "]");
       }
 
+      // 加载指定的类
       Class<?> type = loader.loadClass(externalName);
+      // 通过 Test.matched() 方法检测条件是否满足
       if (test.matches(type)) {
+        // 将符合条件的类记录到 matched 集合中
         matches.add((Class<T>) type);
       }
     } catch (Throwable t) {
